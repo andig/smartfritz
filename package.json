@@ -1,42 +1,35 @@
 {
-  "name": "smartfritz",
-  "version": "0.1.7",
+  "name": "smartfritz-promise",
+  "version": "0.2.0",
   "description": "SmartHome for Fritz!Box and Dect!200 Node to communicate with AVM FritzBox over the aha-http-interface",
-  "author": {
-    "name": "nischi",
-    "url": "http://www.nischi.at"
-  },
+  "author": "Andreas Goetz <cpuidle@gmx.de>",
+  "homepage": "https://github.com/nischelwitzer/smartfritz",
   "license": "MIT",
   "contributors": [
     {
       "name": "Steffen Timm",
       "email": "s.timm@nischi.net"
     },
-	{
+    {
       "name": "nischi.at",
       "url": "http://www.nischelwitzer.at"
     }
   ],
-  "main": "./lib/smartfritz.js",
+  "main": "smartfritz.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nischelwitzer/smartfritz"
+    "url": "https://github.com/andig/smartfritz"
   },
   "dependencies": {
-    "http": "*",
+    "request": ">=2.45.*",
+    "bluebird": "*",
     "querystring": ">=0.2.0"
   },
   "keywords": [
     "FritzBox",
     "SmartHome",
     "AHA",
-	"Dect 200",
-	"SmartFritz"
-  ],
-  "readme": "",
-  "readmeFilename": "README.md",
-  "bugs": {
-    "url": "https://github.com/nischelwitzer/smartfritz/issues"
-  },
-  "homepage": "https://github.com/nischelwitzer/smartfritz"
+    "Dect 200",
+    "SmartFritz"
+  ]
 }
