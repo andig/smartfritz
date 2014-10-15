@@ -14,7 +14,7 @@
  */
 
 var Promise = require('bluebird');
-var request = require('request').defaults({ strictSSL: false });
+var request = require('request').defaults({ strictSSL: false }); // be less strict about SSL errors
 var querystring = require('querystring');
 
 // #############################################################################
@@ -31,9 +31,7 @@ function extend()
 // run command for selected device
 function executeCommand(sid, command, ain, options, path)
 {
-    options = extend({url: 'http://fritz.box'}, options||{});
-
-    var req = extend({}, options);
+    var req = extend({ url: 'http://fritz.box' }, options || {});
     req.url += path || '/webservices/homeautoswitch.lua?0=0';
     if (sid)
         req.url += '&sid=' + sid;
@@ -91,7 +89,9 @@ module.exports.checkSession = function(sid, options)
 // get the switch list
 module.exports.getSwitchList = function(sid, options)
 {
-    return executeCommand(sid, 'getswitchlist', null, options);
+    return executeCommand(sid, 'getswitchlist', null, options).then(function(res) {
+        return Promise.resolve(res.split(','));
+    });
 };
 
 // get switch state
