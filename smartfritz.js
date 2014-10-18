@@ -58,6 +58,9 @@ function executeCommand(sid, command, ain, options, path)
 
 // #############################################################################
 
+// run command for selected device
+module.exports.executeCommand = executeCommand;
+
 // get session id
 module.exports.getSessionID = function(username, password, options)
 {
@@ -97,19 +100,25 @@ module.exports.getSwitchList = function(sid, options)
 // get switch state
 module.exports.getSwitchState = function(sid, ain, options)
 {
-    return executeCommand(sid, 'getswitchstate', ain, options);
+    return executeCommand(sid, 'getswitchstate', ain, options).then(function(body) {
+        return Promise.resolve(/^1/.test(body)); // true if on
+    });
 };
 
 // turn an outlet on. returns the state the outlet was set to
 module.exports.setSwitchOn = function(sid, ain, options)
 {
-    return executeCommand(sid, 'setswitchon', ain, options);
+    return executeCommand(sid, 'setswitchon', ain, options).then(function(body) {
+        return Promise.resolve(/^1/.test(body)); // true if on
+    });
 };
 
 // turn an outlet off. returns the state the outlet was set to
 module.exports.setSwitchOff = function(sid, ain, options)
 {
-    return executeCommand(sid, 'setswitchoff', ain, options);
+    return executeCommand(sid, 'setswitchoff', ain, options).then(function(body) {
+        return Promise.resolve(/^1/.test(body)); // false if off
+    });
 };
 
 // get the total enery consumption. returns the value in Wh
