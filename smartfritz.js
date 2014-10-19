@@ -124,13 +124,17 @@ module.exports.setSwitchOff = function(sid, ain, options)
 // get the total enery consumption. returns the value in Wh
 module.exports.getSwitchEnergy = function(sid, ain, options)
 {
-    return executeCommand(sid, 'getswitchenergy', ain, options);
+    return executeCommand(sid, 'getswitchenergy', ain, options).then(function(body) {
+        return Promise.resolve(parseFloat(body)); // Wh
+    });
 };
 
 // get the current enery consumption of an outlet. returns the value in mW
 module.exports.getSwitchPower = function(sid, ain, options)
 {
-    return executeCommand(sid, 'getswitchpower', ain, options);
+    return executeCommand(sid, 'getswitchpower', ain, options).then(function(body) {
+        return Promise.resolve(parseFloat(body) / 1000); // W
+    });
 };
 
 // get detailed device information (XLM)
