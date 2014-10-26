@@ -44,7 +44,11 @@ function executeCommand(sid, command, ain, options, path)
 
     return new Promise(function(resolve, reject) {
         request(req, function(error, response, body) {
-            if (error || !(/^2/.test('' + response.statusCode))) {
+            if (error || !(/^2/.test('' + response.statusCode)) || /action=".?login.lua"/.test(body)) {
+                if (/action=".?login.lua"/.test(body)) {
+                    // fake failed login if redirected to login page without HTTP 403
+                    response.statusCode = 403;
+                }
                 reject({
                     error: error,
                     response: response,
@@ -229,7 +233,11 @@ module.exports.setGuestWlan = function(sid, enable, options)
 
         return new Promise(function(resolve, reject) {
             request(req, function(error, response, body) {
-                if (error || !(/^2/.test('' + response.statusCode))) {
+                if (error || !(/^2/.test('' + response.statusCode)) || /action=".?login.lua"/.test(body)) {
+                    if (/action=".?login.lua"/.test(body)) {
+                        // fake failed login if redirected to login page without HTTP 403
+                        response.statusCode = 403;
+                    }
                     reject({
                         error: error,
                         response: response,
