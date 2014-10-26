@@ -16,6 +16,7 @@
 var Promise = require('bluebird');
 var request = require('request').defaults({ strictSSL: false }); // be less strict about SSL errors
 var querystring = require('querystring');
+var htmlParser = require('html-parser');
 
 // #############################################################################
 
@@ -33,6 +34,7 @@ function executeCommand(sid, command, ain, options, path)
 {
     var req = extend({ url: 'http://fritz.box' }, options || {});
     req.url += path || '/webservices/homeautoswitch.lua?0=0';
+
     if (sid)
         req.url += '&sid=' + sid;
     if (command)
@@ -55,6 +57,56 @@ function executeCommand(sid, command, ain, options, path)
         });
     });
 };
+
+/**
+ * Parse guest WLAN form settings
+ */
+function parseHTML(html)
+{
+    var settings = {};
+    var blacklist = ['autoupdate'];
+    var isInput, inputName, inputType, inputValue, isSelect, inputSelectedOption;
+
+    htmlParser.parse(html, {
+        openElement: function(name) { 
+            isInput = ['input'].indexOf(name) >= 0;
+            isSelect = ['select', 'option'].indexOf(name) >= 0;
+        },
+        closeOpenedElement: function(name, token, unary) { 
+            if (inputName) {
+                if (isInput || inputSelectedOption) {
+                    if (isInput && inputType == 'checkbox' && inputValue == null) inputValue = false;
+                    if (blacklist.indexOf(inputName) < 0)
+                        settings[inputName] = inputValue;
+                    isInput = isSelect = inputName = inputType = inputValue = inputSelectedOption = null;
+                }
+            }
+        },
+        attribute: function(name, value) { 
+            if (isInput || isSelect) {
+                switch (name) {
+                    case 'name':
+                        inputName = value;
+                        break;
+                    case 'type':
+                        inputType = value;
+                        break;
+                    case 'value':
+                        inputValue = value;
+                        break;
+                    case 'checked':
+                        inputValue = true;
+                        break;
+                    case 'selected':
+                        inputSelectedOption = true;
+                        break;
+                }
+            } 
+        },
+    });
+
+    return settings;
+}
 
 // #############################################################################
 
@@ -145,85 +197,49 @@ module.exports.getDeviceListInfo = function(sid, options)
 
 module.exports.getGuestWlan = function(sid, options)
 {
-    // return Promise.resolve("NOT IMPLEMENTED");
-
-    return executeCommand(sid, null, null, options, '/wlan/guest_access.lua').then(
-        function(data) {
-            console.log("THEN");
-            var settings = { };
-            console.log(data);
-            return Promise.resolve("NOT IMPLEMENTED");
-
-        //     settings.enabled = /"wlan:settings\/guest_ap_enabled"\] = "([^"]*)"/g.exec(data)[1]=="1";
-        //     settings.ssid = /"wlan:settings\/guest_ssid"\] = "([^"]*)"/g.exec(data)[1];
-        //     settings.wpakey = /"wlan:settings\/guest_pskvalue"\] = "([^"]*)"/g.exec(data)[1];
-        //     settings.security = "0";
-        //     settings.modus = /"wlan:settings\/guest_encryption"\] = "([^"]*)"/g.exec(data)[1];
-        //     settings.timeout = /"wlan:settings\/guest_timeout"\] = "([^"]*)"/g.exec(data)[1];
-        //     settings.timeoutactive = /"wlan:settings\/guest_timeout_active"\] = "([^"]*)"/g.exec(data)[1];
-
-        //     return Promise.resolve(settings);
-        }
-    );
+    return executeCommand(sid, null, null, options, '/wlan/guest_access.lua?0=0').then(function(body) {
+        return Promise.resolve(parseHTML(body));
+    });
 };
 
 module.exports.setGuestWlan = function(sid, enable, options)
 {
-    return Promise.resolve("NOT IMPLEMENTED");
+    return executeCommand(sid, null, null, options, '/wlan/guest_access.lua?0=0').then(function(body) {
+        var settings = parseHTML(body);
 
-    return executeCommand(sid, null, null, options, '/wlan/guest_access.lua').then(function(data) {
-        console.log(data);
-
-        // settings.enabled = /"wlan:settings\/guest_ap_enabled"\] = "([^"]*)"/g.exec(data)[1]=="1";
-        // settings.ssid = /"wlan:settings\/guest_ssid"\] = "([^"]*)"/g.exec(data)[1];
-        // settings.wpakey = /"wlan:settings\/guest_pskvalue"\] = "([^"]*)"/g.exec(data)[1];
-        // settings.security = "0";
-        // settings.modus = /"wlan:settings\/guest_encryption"\] = "([^"]*)"/g.exec(data)[1];
-        // settings.timeout = /"wlan:settings\/guest_timeout"\] = "([^"]*)"/g.exec(data)[1];
-        // settings.timeoutactive = /"wlan:settings\/guest_timeout_active"\] = "([^"]*)"/g.exec(data)[1];
-
-        options.ssid || (options.ssid = /"wlan:settings\/guest_ssid"\] = "([^"]*)"/g.exec(data)[1]);
-        options.wpakey || (options.wpakey = /"wlan:settings\/guest_pskvalue"\] = "([^"]*)"/g.exec(data)[1]);
-        options.security || (options.security = "0");
-        options.modus || (options.modus = /"wlan:settings\/guest_encryption"\] = "([^"]*)"/g.exec(data)[1]);
-        options.timeout || (options.timeout = /"wlan:settings\/guest_timeout"\] = "([^"]*)"/g.exec(data)[1]);
-        options.timeoutactive || (options.timeoutactive = /"wlan:settings\/guest_timeout_active"\] = "([^"]*)"/g.exec(data)[1]);
-
-        var parameters = {
-            "guest_ssid": options.ssid,
-            "wlan_security": options.security,
-            "wpa_key": options.wpakey,
-            "wpa_modus": options.modus,
-            "down_time_activ": options.timeoutactive,
-            "down_time_value": options.timeout,
-            "btnSave": ""
-        };
-
-        if (enable) {
-            parameters.activate_guest_access = "on";
+        // checkboxes
+        for (property in settings) {
+            if (settings[property] === true)
+                settings[property] = 'on'
+            else if (settings[property] === false)
+                delete settings[property];
         }
 
-        var post_data = querystring.stringify(parameters);
+        if (enable)
+            settings.activate_guest_access = 'on'
+        else
+            delete settings.activate_guest_access;
 
-        var reg = extend({}, options, { method: 'POST', headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Content-Length': post_data.length
-        }});
+        var req = extend({ 
+            url: 'http://fritz.box', 
+            method: 'POST',
+            form: settings
+        }, options || {});
+        req.url += '/wlan/guest_access.lua?sid=' + sid;
 
-        return executeCommand(sid, null, null, req, '/wlan/guest_access.lua').then(function(data) {
-            var settings = { };
-            console.log(data);
-            return Promise.resolve("NOT IMPLEMENTED");
-
-            settings.enabled = /"wlan:settings\/guest_ap_enabled"\] = "([^"]*)"/g.exec(data)[1]=="1";
-            settings.ssid = /"wlan:settings\/guest_ssid"\] = "([^"]*)"/g.exec(data)[1];
-            settings.wpakey = /"wlan:settings\/guest_pskvalue"\] = "([^"]*)"/g.exec(data)[1];
-            settings.security = "0";
-            settings.modus = /"wlan:settings\/guest_encryption"\] = "([^"]*)"/g.exec(data)[1];
-            settings.timeout = /"wlan:settings\/guest_timeout"\] = "([^"]*)"/g.exec(data)[1];
-            settings.timeoutactive = /"wlan:settings\/guest_timeout_active"\] = "([^"]*)"/g.exec(data)[1];
-
-            return Promise.resolve(settings);
+        return new Promise(function(resolve, reject) {
+            request(req, function(error, response, body) {
+                if (error || !(/^2/.test('' + response.statusCode))) {
+                    reject({
+                        error: error,
+                        response: response,
+                        options: req
+                    });
+                }
+                else {
+                    resolve(parseHTML(body.trim()));
+                }
+            });
         });
     });
 };
