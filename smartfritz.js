@@ -68,7 +68,6 @@ function executeCommand(sid, command, ain, options, path)
 function parseHTML(html)
 {
     var settings = {};
-    var blacklist = ['autoupdate'];
     var isInput, inputName, inputType, inputValue, isSelect, inputSelectedOption;
 
     htmlParser.parse(html, {
@@ -80,8 +79,7 @@ function parseHTML(html)
             if (inputName) {
                 if (isInput || inputSelectedOption) {
                     if (isInput && inputType == 'checkbox' && inputValue == null) inputValue = false;
-                    if (blacklist.indexOf(inputName) < 0)
-                        settings[inputName] = inputValue;
+                    settings[inputName] = inputValue;
                     isInput = isSelect = inputName = inputType = inputValue = inputSelectedOption = null;
                 }
             }
@@ -223,6 +221,10 @@ module.exports.setGuestWlan = function(sid, enable, options)
             settings.activate_guest_access = 'on'
         else
             delete settings.activate_guest_access;
+
+        // add "save" hints for various FB versions
+        settings.btnSave = '';
+        settings.xhr = 1;
 
         var req = extend({ 
             url: 'http://fritz.box', 
