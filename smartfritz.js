@@ -60,7 +60,7 @@ function executeCommand(sid, command, ain, options, path)
             }
         });
     });
-};
+}
 
 /**
  * Parse guest WLAN form settings
@@ -78,13 +78,14 @@ function parseHTML(html)
         closeOpenedElement: function(name, token, unary) { 
             if (inputName) {
                 if (isInput || inputSelectedOption) {
-                    if (isInput && inputType == 'checkbox' && inputValue == null) inputValue = false;
+                    if (isInput && inputType == 'checkbox' && inputValue === null)
+                        inputValue = false;
                     settings[inputName] = inputValue;
                     isInput = isSelect = inputName = inputType = inputValue = inputSelectedOption = null;
                 }
             }
         },
-        attribute: function(name, value) { 
+        attribute: function(name, value) {
             if (isInput || isSelect) {
                 switch (name) {
                     case 'name':
@@ -103,17 +104,56 @@ function parseHTML(html)
                         inputSelectedOption = true;
                         break;
                 }
-            } 
+            }
         },
     });
 
     return settings;
 }
 
+// temperature conversion
+function temp2api(temp)
+{
+    var res;
+
+    if (temp == 'ON' || temp === true)
+        res = 254;
+    else if (temp == 'OFF' || temp === false)
+        res = 253;
+    else {
+        if (temp < 8)
+            temp = 8;
+        else if (temp > 28)
+            temp = 28;
+
+        // 0.5C accuracy
+        res = Math.round((temp - 8) * 2) + 16;
+    }
+
+    return res;
+}
+
+function api2temp(param)
+{
+    if (param == 254)
+        return 'ON';
+    else if (param == 253)
+        return 'OFF';
+    else {
+        // 0.5C accuracy
+        return (parseFloat(param) - 16) / 2 + 8;
+    }
+}
+
 // #############################################################################
 
 // run command for selected device
 module.exports.executeCommand = executeCommand;
+
+
+/*
+ * Session handling
+ */
 
 // get session id
 module.exports.getSessionID = function(username, password, options)
@@ -142,6 +182,10 @@ module.exports.checkSession = function(sid, options)
         return Promise.resolve(sessionID);
     });
 };
+
+/*
+ * Switches
+ */
 
 // get the switch list
 module.exports.getSwitchList = function(sid, options)
@@ -191,11 +235,40 @@ module.exports.getSwitchPower = function(sid, ain, options)
     });
 };
 
-// get detailed device information (XLM)
+// get the outet presence status
+module.exports.getSwitchPresence = function(sid, ain, options)
+{
+    return executeCommand(sid, 'getswitchpresent', ain, options).then(function(body) {
+        return Promise.resolve(/^1/.test(body)); // true if present
+    });
+};
+
+// get switch name
+module.exports.getSwitchName = function(sid, ain, options)
+{
+    return executeCommand(sid, 'getswitchname', ain, options).then(function(body) {
+        return Promise.resolve(body.trim());
+    });
+};
+
+// get the outet temperature
+module.exports.getSwitchTemperature = function(sid, ain, options)
+{
+    return executeCommand(sid, 'getswitchtemperature', ain, options).then(function(body) {
+        return Promise.resolve(parseFloat(body) / 10); // °C
+    });
+};
+
+// get detailed device information (XML)
 module.exports.getDeviceListInfo = function(sid, options)
 {
     return executeCommand(sid, 'getdevicelistinfos', null, options);
 };
+
+
+/*
+ * WLAN
+ */
 
 module.exports.getGuestWlan = function(sid, options)
 {
@@ -210,15 +283,15 @@ module.exports.setGuestWlan = function(sid, enable, options)
         var settings = parseHTML(body);
 
         // checkboxes
-        for (property in settings) {
+        for (var property in settings) {
             if (settings[property] === true)
-                settings[property] = 'on'
+                settings[property] = 'on';
             else if (settings[property] === false)
                 delete settings[property];
         }
 
         if (enable)
-            settings.activate_guest_access = 'on'
+            settings.activate_guest_access = 'on';
         else
             delete settings.activate_guest_access;
 
@@ -251,5 +324,42 @@ module.exports.setGuestWlan = function(sid, enable, options)
                 }
             });
         });
+    });
+};
+
+
+/*
+ * Thermostat
+ */
+
+// set target temperature (Solltemperatur)
+module.exports.setTempTarget = function(sid, ain, temp, options)
+{
+    return executeCommand(sid, 'sethkrtsoll&param=' + temp2api(temp), ain, options).then(function(body) {
+        return Promise.resolve(body);
+    });
+};
+
+// get target temperature (Solltemperatur)
+module.exports.getTempTarget = function(sid, ain, options)
+{
+    return executeCommand(sid, 'gethkrtsoll', ain, options).then(function(body) {
+        return Promise.resolve(api2temp(body));
+    });
+};
+
+// get nght temperature (Absenktemperatur)
+module.exports.getTempNight = function(sid, ain, options)
+{
+    return executeCommand(sid, 'gethkrabsenk', ain, options).then(function(body) {
+        return Promise.resolve(api2temp(body));
+    });
+};
+
+// get comfort temperature (Komforttemperatur)
+module.exports.getTempComfort = function(sid, ain, options)
+{
+    return executeCommand(sid, 'gethkrkomfort', ain, options).then(function(body) {
+        return Promise.resolve(api2temp(body));
     });
 };

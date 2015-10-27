@@ -2,20 +2,44 @@
 
 Node module to communicate with a AVM FritzBox and FRITZ!DECT 200 (smart home hardware) providing the following functions:
 
+### Sesson handling
+
 - Get the session ID (getSessionID)
-- Get the switch (FRITZ!DECT 200) State (getSwitchState)
-- Set the switch (FRITZ!DECT 200) ON (setSwitchOn)
-- Set the switch (FRITZ!DECT 200) OFF (setSwitchOff)
-- Get the switch (FRITZ!DECT 200) Power (getSwitchPower)
-- Get the switch (FRITZ!DECT 200) Energy (getSwitchEnergy)
-- Get the switch (FRITZ!DECT 200) List (getSwitchList)
-- Get the DeviceListInfos (FRITZ!DECT 200) as XML (getDeviceListInfos) >FritzOS 6.10
+
+### FRITZ!DECT 200 functions
+
+- Get switch State (getSwitchState)
+- Set switch ON (setSwitchOn)
+- Set switch OFF (setSwitchOff)
+- Get switch Power (getSwitchPower)
+- Get switch Energy (getSwitchEnergy)
+- Get switch Temperature (getSwitchTemperature)
+- Get switch Presence status (getSwitchPresence)
+- Get switch Name (getSwitchName)
+- Get switch List (getSwitchList)
+- Get DeviceListInfos as XML (getDeviceListInfos) >FritzOS 6.10
+
+For AVM FRITZ!DECT 200  control you need to know the actuator identification number (AIN) which can be obtained using `getSwitchList`.
+
+### Wlan functions
+
 - Set the guest wlan (setGuestWLan)
 - Get the guest wlan settings (getGuestWLan)
 
-All functions have been tested on FritzOS 6.20 / FritzBox 7390. The WLAN functions may be less stable.
+### Thermostat functions
 
-For AVM FRITZ!DECT 200  control you need to know your Actuator identification number (AIN)
+Thermostat functions are only available as of FritzOS 6.36
+
+- Set target temperature (setTempTarget), supports 'ON'/'OFF' to enable/disable thermostat
+- Get target temperature (getTempTarget)
+- Get comfort temperature (getTempComfort)
+- Get night temperature (getTempNight)
+
+**Note** as of FritzOS 6.36 there is are no official function to obtain a list of thermostats, neither to get the thermostat's temperature. Also the switches `getSwitchTemperature()` function is not working in that firmware version.
+For an alternative approach see the `getTemperature()` function in `example.js` which supports both switches and thermostats.
+
+All functions have been tested on FritzOS 6.20/6.36 / FritzBox 7390. The WLAN functions may be less stable.
+
 
 ## Install
 
