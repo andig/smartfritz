@@ -1,6 +1,6 @@
 {
   "name": "smartfritz-promise",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "SmartHome for Fritz!Box and Dect!200 Node to communicate with AVM FritzBox over the aha-http-interface",
   "author": {
     "name": "Andreas Goetz",
@@ -29,10 +29,11 @@
     "url": "https://github.com/andig/smartfritz"
   },
   "dependencies": {
-    "request": ">=2.45.*",
-    "bluebird": "*",
+    "bluebird": "^3.0.2",
+    "html-parser": ">=0.7.3",
     "querystring": ">=0.2.0",
-    "html-parser": ">=0.7.3"
+    "request": ">=2.45.*",
+    "xml2json": "^0.9.0"
   },
   "keywords": [
     "FritzBox",

@@ -17,6 +17,7 @@ var Promise = require('bluebird');
 var request = require('request').defaults({ strictSSL: false }); // be less strict about SSL errors
 var querystring = require('querystring');
 var htmlParser = require('html-parser');
+var parser = require('xml2json');
 
 // #############################################################################
 
@@ -116,9 +117,9 @@ function temp2api(temp)
 {
     var res;
 
-    if (temp == 'ON' || temp === true)
+    if (temp == 'on' || temp === true)
         res = 254;
-    else if (temp == 'OFF' || temp === false)
+    else if (temp == 'off' || temp === false)
         res = 253;
     else {
         if (temp < 8)
@@ -136,9 +137,9 @@ function temp2api(temp)
 function api2temp(param)
 {
     if (param == 254)
-        return 'ON';
+        return 'on';
     else if (param == 253)
-        return 'OFF';
+        return 'off';
     else {
         // 0.5C accuracy
         return (parseFloat(param) - 16) / 2 + 8;
@@ -256,6 +257,9 @@ module.exports.getSwitchTemperature = function(sid, ain, options)
 {
     return executeCommand(sid, 'getswitchtemperature', ain, options).then(function(body) {
         return Promise.resolve(parseFloat(body) / 10); // °C
+    }).catch(function() {
+        // fallback to getDeviceList
+        return module.exports.getTemperature(sid, ain, options);
     });
 };
 
@@ -332,11 +336,31 @@ module.exports.setGuestWlan = function(sid, enable, options)
  * Thermostat
  */
 
+// get the switch list
+module.exports.getThermostatList = function(sid, options)
+{
+    return module.exports.getDeviceListInfo(sid, options).then(function(devicelistinfo) {
+        // xml to json object
+        var devices = parser.toJson(devicelistinfo, {object:true}).devicelist.device;
+
+        // get thermostats- right now they're only available via the XML api
+        var thermostats = devices.filter(function(device) {
+            return device.productname == 'Comet DECT';
+        }).map(function(device) {
+            // fix ain
+            return device.identifier.replace(/\s/g, '');
+        });
+
+        return Promise.resolve(thermostats);
+    });
+};
+
 // set target temperature (Solltemperatur)
 module.exports.setTempTarget = function(sid, ain, temp, options)
 {
     return executeCommand(sid, 'sethkrtsoll&param=' + temp2api(temp), ain, options).then(function(body) {
-        return Promise.resolve(body);
+        // api does not return a value
+        return Promise.resolve(temp);
     });
 };
 
@@ -361,5 +385,28 @@ module.exports.getTempComfort = function(sid, ain, options)
 {
     return executeCommand(sid, 'gethkrkomfort', ain, options).then(function(body) {
         return Promise.resolve(api2temp(body));
+    });
+};
+
+
+/*
+ * Polyfills
+ */
+
+// get temperature- both switches and thermostats are supported
+module.exports.getTemperature = function(sid, ain, options)
+{
+    return module.exports.getDeviceListInfo(sid, options).then(function(devicelistinfo) {
+        // xml to json object
+        var device = parser.toJson(devicelistinfo, {object:true}).devicelist.device.filter(function(device) {
+            return device.identifier.replace(/\s/g, '') == ain;
+        });
+
+        if (device.length) {
+            return Promise.resolve(parseFloat(device[0].temperature.celsius) / 10); // °C
+        }
+        else {
+            return Promise.reject();
+        }
     });
 };
