@@ -112,7 +112,12 @@ function parseHTML(html)
     return settings;
 }
 
-// temperature conversion
+/*
+ * Temperature conversion
+ */
+const MIN_TEMP = 8;
+const MAX_TEMP = 28;
+
 function temp2api(temp)
 {
     var res;
@@ -122,13 +127,8 @@ function temp2api(temp)
     else if (temp == 'off' || temp === false)
         res = 253;
     else {
-        if (temp < 8)
-            temp = 8;
-        else if (temp > 28)
-            temp = 28;
-
         // 0.5C accuracy
-        res = Math.round((temp - 8) * 2) + 16;
+        res = Math.round((Math.min(Math.max(temp, MIN_TEMP), MAX_TEMP) - 8) * 2) + 16;
     }
 
     return res;
@@ -151,6 +151,9 @@ function api2temp(param)
 // run command for selected device
 module.exports.executeCommand = executeCommand;
 
+// supported temperature range
+module.exports.MIN_TEMP = MIN_TEMP;
+module.exports.MAX_TEMP = MAX_TEMP;
 
 /*
  * Session handling
