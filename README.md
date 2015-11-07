@@ -12,15 +12,15 @@ Node module to communicate with a AVM FritzBox and FRITZ!DECT 200 (smart home ha
 
 ### FRITZ!DECT 200 outlet functions
 
-- Get switch list (getSwitchList)
-- Get switch state (getSwitchState)
-- Set switch oN (setSwitchOn)
-- Set switch oFF (setSwitchOff)
-- Get switch power (getSwitchPower)
-- Get switch energy (getSwitchEnergy)
-- Get switch temperature (getSwitchTemperature- falls back to getTemperature if not supported by firmware)
-- Get switch presence status (getSwitchPresence)
-- Get switch name (getSwitchName)
+- Get list (getSwitchList)
+- Get state (getSwitchState)
+- Set on (setSwitchOn)
+- Set off (setSwitchOff)
+- Get power (getSwitchPower)
+- Get energy (getSwitchEnergy)
+- Get temperature (getSwitchTemperature- falls back to getTemperature if not supported by firmware)
+- Get presence status (getSwitchPresence)
+- Get name (getSwitchName)
 
 For AVM FRITZ!DECT 200  control you need to know the actuator identification number (AIN) which can be obtained using `getSwitchList`.
 
@@ -33,8 +33,8 @@ For AVM FRITZ!DECT 200  control you need to know the actuator identification num
 
 Thermostat functions are only available as of FritzOS 6.36
 
-- Get thermostat list (getThermostatList) - polyfill
-- Get thermostat temperature (getTemperature) - polyfill using getDeviceListInfos XML api internally
+- Get list (getThermostatList) - polyfill
+- Get temperature (getTemperature) - polyfill using getDeviceListInfos XML api internally
 - Set target temperature (setTempTarget), supports 'ON'/'OFF' to enable/disable thermostat
 - Get target temperature (getTempTarget)
 - Get comfort temperature (getTempComfort)
