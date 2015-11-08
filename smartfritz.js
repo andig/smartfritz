@@ -117,7 +117,7 @@ function parseHTML(html)
   */
 function getDeviceListInfoArray(sid, options) {
     return module.exports.getDeviceListInfo(sid, options).then(function(devicelistinfo) {
-        var devices = parser.toJson(devicelistinfo, {object:true});
+        var devices = parser.toJson(devicelistinfo, {object:true, arrayNotation:true});
         return Promise.resolve((devices.devicelist || {}).device || []);
     });
 }
