@@ -112,6 +112,16 @@ function parseHTML(html)
     return settings;
 }
 
+/**
+ * Return devices array
+  */
+function getDeviceListInfoArray(sid, options) {
+    return module.exports.getDeviceListInfo(sid, options).then(function(devicelistinfo) {
+        var devices = parser.toJson(devicelistinfo, {object:true});
+        return Promise.resolve((devices.devicelist || {}).device || []);
+    });
+}
+
 /*
  * Temperature conversion
  */
@@ -342,10 +352,7 @@ module.exports.setGuestWlan = function(sid, enable, options)
 // get the switch list
 module.exports.getThermostatList = function(sid, options)
 {
-    return module.exports.getDeviceListInfo(sid, options).then(function(devicelistinfo) {
-        // xml to json object
-        var devices = parser.toJson(devicelistinfo, {object:true}).devicelist.device;
-
+    return getDeviceListInfoArray(sid, options).then(function(devices) {
         // get thermostats- right now they're only available via the XML api
         var thermostats = devices.filter(function(device) {
             return device.productname == 'Comet DECT';
@@ -399,9 +406,8 @@ module.exports.getTempComfort = function(sid, ain, options)
 // get temperature- both switches and thermostats are supported
 module.exports.getTemperature = function(sid, ain, options)
 {
-    return module.exports.getDeviceListInfo(sid, options).then(function(devicelistinfo) {
-        // xml to json object
-        var device = parser.toJson(devicelistinfo, {object:true}).devicelist.device.filter(function(device) {
+    return getDeviceListInfoArray(sid, options).then(function(devices) {
+        var device = devices.filter(function(device) {
             return device.identifier.replace(/\s/g, '') == ain;
         });
 
