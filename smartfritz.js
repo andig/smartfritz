@@ -112,6 +112,18 @@ function parseHTML(html)
     return settings;
 }
 
+/**
+ * Return devices array
+  */
+function getDeviceListInfoArray(sid, options) {
+    return module.exports.getDeviceListInfo(sid, options).then(function(devicelistinfo) {
+        var devices = parser.toJson(devicelistinfo, {object:true});
+        // extract devices as array
+        devices = [].concat((devices.devicelist || {}).device || []);
+        return Promise.resolve(devices);
+    });
+}
+
 /*
  * Temperature conversion
  */
@@ -154,6 +166,13 @@ module.exports.executeCommand = executeCommand;
 // supported temperature range
 module.exports.MIN_TEMP = MIN_TEMP;
 module.exports.MAX_TEMP = MAX_TEMP;
+
+// functions bitmask
+module.exports.FUNCTION_THERMOSTAT          = 1 << 6;  // Comet DECT, Heizkostenregler
+module.exports.FUNCTION_ENERGYMETER         = 1 << 7;  // Energie Messgerät
+module.exports.FUNCTION_TEMPERATURESENSOR   = 1 << 8;  // Temperatursensor
+module.exports.FUNCTION_OUTLET              = 1 << 9;  // Schaltsteckdose
+module.exports.FUNCTION_DECTREPEATER        = 1 << 10; // AVM DECT Repeater
 
 /*
  * Session handling
@@ -342,10 +361,7 @@ module.exports.setGuestWlan = function(sid, enable, options)
 // get the switch list
 module.exports.getThermostatList = function(sid, options)
 {
-    return module.exports.getDeviceListInfo(sid, options).then(function(devicelistinfo) {
-        // xml to json object
-        var devices = parser.toJson(devicelistinfo, {object:true}).devicelist.device;
-
+    return getDeviceListInfoArray(sid, options).then(function(devices) {
         // get thermostats- right now they're only available via the XML api
         var thermostats = devices.filter(function(device) {
             return device.productname == 'Comet DECT';
@@ -399,9 +415,8 @@ module.exports.getTempComfort = function(sid, ain, options)
 // get temperature- both switches and thermostats are supported
 module.exports.getTemperature = function(sid, ain, options)
 {
-    return module.exports.getDeviceListInfo(sid, options).then(function(devicelistinfo) {
-        // xml to json object
-        var device = parser.toJson(devicelistinfo, {object:true}).devicelist.device.filter(function(device) {
+    return getDeviceListInfoArray(sid, options).then(function(devices) {
+        var device = devices.filter(function(device) {
             return device.identifier.replace(/\s/g, '') == ain;
         });
 
