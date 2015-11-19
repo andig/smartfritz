@@ -15,8 +15,7 @@
 
 var Promise = require('bluebird');
 var request = require('request').defaults({ strictSSL: false }); // be less strict about SSL errors
-var querystring = require('querystring');
-var htmlParser = require('html-parser');
+var cheerio = require('cheerio');
 var parser = require('xml2json');
 
 // #############################################################################
@@ -68,45 +67,29 @@ function executeCommand(sid, command, ain, options, path)
  */
 function parseHTML(html)
 {
+    $ = cheerio.load(html);
+    var form = $('form');
     var settings = {};
-    var isInput, inputName, inputType, inputValue, isSelect, inputSelectedOption;
 
-    htmlParser.parse(html, {
-        openElement: function(name) { 
-            isInput = ['input'].indexOf(name) >= 0;
-            isSelect = ['select', 'option'].indexOf(name) >= 0;
-        },
-        closeOpenedElement: function(name, token, unary) { 
-            if (inputName) {
-                if (isInput || inputSelectedOption) {
-                    if (isInput && inputType == 'checkbox' && inputValue === null)
-                        inputValue = false;
-                    settings[inputName] = inputValue;
-                    isInput = isSelect = inputName = inputType = inputValue = inputSelectedOption = null;
-                }
-            }
-        },
-        attribute: function(name, value) {
-            if (isInput || isSelect) {
-                switch (name) {
-                    case 'name':
-                        inputName = value;
-                        break;
-                    case 'type':
-                        inputType = value;
-                        break;
-                    case 'value':
-                        inputValue = value;
-                        break;
-                    case 'checked':
-                        inputValue = true;
-                        break;
-                    case 'selected':
-                        inputSelectedOption = true;
-                        break;
-                }
-            }
-        },
+    $('input', form).each(function(i, elem) {
+        var val;
+        var name = $(elem).attr('name');
+        if (!name) return;
+
+        switch ($(elem).attr('type')) {
+            case 'checkbox':
+                val = $(elem).attr('checked') == 'checked';
+                break;
+            default:
+                val = $(elem).val();
+        }
+        settings[name] = val;
+    });
+
+    $('select option[selected=selected]', form).each(function(i, elem) {
+        var val = $(elem).val();
+        var name = $(elem).parent().attr('name');
+        settings[name] = val;
     });
 
     return settings;
@@ -114,7 +97,7 @@ function parseHTML(html)
 
 /**
  * Return devices array
-  */
+ */
 function getDeviceListInfoArray(sid, options) {
     return module.exports.getDeviceListInfo(sid, options).then(function(devicelistinfo) {
         var devices = parser.toJson(devicelistinfo, {object:true});
@@ -206,6 +189,26 @@ module.exports.checkSession = function(sid, options)
     });
 };
 
+
+/*
+ * General functions
+ */
+
+// get detailed device information (XML)
+module.exports.getDeviceListInfo = function(sid, options)
+{
+    return executeCommand(sid, 'getdevicelistinfos', null, options);
+};
+
+// get temperature- both switches and thermostats are supported
+module.exports.getTemperature = function(sid, ain, options)
+{
+    return executeCommand(sid, 'getswitchtemperature', ain, options).then(function(body) {
+        return Promise.resolve(parseFloat(body) / 10); // °C
+    });
+};
+
+
 /*
  * Switches
  */
@@ -274,88 +277,9 @@ module.exports.getSwitchName = function(sid, ain, options)
     });
 };
 
-// get the outet temperature
-module.exports.getSwitchTemperature = function(sid, ain, options)
-{
-    return executeCommand(sid, 'getswitchtemperature', ain, options).then(function(body) {
-        return Promise.resolve(parseFloat(body) / 10); // °C
-    }).catch(function() {
-        // fallback to getDeviceList
-        return module.exports.getTemperature(sid, ain, options);
-    });
-};
-
-// get detailed device information (XML)
-module.exports.getDeviceListInfo = function(sid, options)
-{
-    return executeCommand(sid, 'getdevicelistinfos', null, options);
-};
-
 
 /*
- * WLAN
- */
-
-module.exports.getGuestWlan = function(sid, options)
-{
-    return executeCommand(sid, null, null, options, '/wlan/guest_access.lua?0=0').then(function(body) {
-        return Promise.resolve(parseHTML(body));
-    });
-};
-
-module.exports.setGuestWlan = function(sid, enable, options)
-{
-    return executeCommand(sid, null, null, options, '/wlan/guest_access.lua?0=0').then(function(body) {
-        var settings = parseHTML(body);
-
-        // checkboxes
-        for (var property in settings) {
-            if (settings[property] === true)
-                settings[property] = 'on';
-            else if (settings[property] === false)
-                delete settings[property];
-        }
-
-        if (enable)
-            settings.activate_guest_access = 'on';
-        else
-            delete settings.activate_guest_access;
-
-        // add "save" hints for various FB versions
-        settings.btnSave = '';
-        settings.xhr = 1;
-
-        var req = extend({ 
-            url: 'http://fritz.box', 
-            method: 'POST',
-            form: settings
-        }, options || {});
-        req.url += '/wlan/guest_access.lua?sid=' + sid;
-
-        return new Promise(function(resolve, reject) {
-            request(req, function(error, response, body) {
-                if (error || !(/^2/.test('' + response.statusCode)) || /action=".?login.lua"/.test(body)) {
-                    if (/action=".?login.lua"/.test(body)) {
-                        // fake failed login if redirected to login page without HTTP 403
-                        response.statusCode = 403;
-                    }
-                    reject({
-                        error: error,
-                        response: response,
-                        options: req
-                    });
-                }
-                else {
-                    resolve(parseHTML(body.trim()));
-                }
-            });
-        });
-    });
-};
-
-
-/*
- * Thermostat
+ * Thermostats
  */
 
 // get the switch list
@@ -409,22 +333,64 @@ module.exports.getTempComfort = function(sid, ain, options)
 
 
 /*
- * Polyfills
+ * WLAN
  */
 
-// get temperature- both switches and thermostats are supported
-module.exports.getTemperature = function(sid, ain, options)
+module.exports.getGuestWlan = function(sid, options)
 {
-    return getDeviceListInfoArray(sid, options).then(function(devices) {
-        var device = devices.filter(function(device) {
-            return device.identifier.replace(/\s/g, '') == ain;
-        });
+    return executeCommand(sid, null, null, options, '/wlan/guest_access.lua?0=0').then(function(body) {
+        return Promise.resolve(parseHTML(body));
+    });
+};
 
-        if (device.length) {
-            return Promise.resolve(parseFloat(device[0].temperature.celsius) / 10); // °C
+module.exports.setGuestWlan = function(sid, enable, options)
+{
+    return executeCommand(sid, null, null, options, '/wlan/guest_access.lua?0=0').then(function(body) {
+        var settings = {};
+
+        if (enable) {
+            settings = parseHTML(body);
+
+            // checkboxes
+            for (var property in settings) {
+                if (settings[property] === true)
+                    settings[property] = 'on';
+                else if (settings[property] === false)
+                    delete settings[property];
+            }
+
+            settings.activate_guest_access = 'on';
         }
-        else {
-            return Promise.reject();
-        }
+
+        // add "save" hints for various FB versions
+        settings.validate = 'apply';
+        settings.btnSave = '';
+        settings.xhr = 1;
+
+        var req = extend({
+            url: 'http://fritz.box',
+            method: 'POST',
+            form: settings
+        }, options || {});
+        req.url += '/wlan/guest_access.lua?sid=' + sid;
+
+        return new Promise(function(resolve, reject) {
+            request(req, function(error, response, body) {
+                if (error || !(/^2/.test('' + response.statusCode)) || /action=".?login.lua"/.test(body)) {
+                    if (/action=".?login.lua"/.test(body)) {
+                        // fake failed login if redirected to login page without HTTP 403
+                        response.statusCode = 403;
+                    }
+                    reject({
+                        error: error,
+                        response: response,
+                        options: req
+                    });
+                }
+                else {
+                    resolve(body.trim());
+                }
+            });
+        });
     });
 };

@@ -2,48 +2,48 @@
 
 Node module to communicate with a AVM FritzBox and FRITZ!DECT 200 (smart home hardware) providing the following functions:
 
-### Sesson handling
+### General functions
 
-- Get the session ID (getSessionID)
-
-### Device list
-
-- Get DeviceListInfos as XML (getDeviceListInfos) >FritzOS 6.10
+- Get the session ID (`getSessionID`)
+- Get device list as XML (`getDeviceListInfos`) >FritzOS 6.10
+- Get temperature (`getTemperature`)
 
 ### FRITZ!DECT 200 outlet functions
 
-- Get list (getSwitchList)
-- Get state (getSwitchState)
-- Set on (setSwitchOn)
-- Set off (setSwitchOff)
-- Get power (getSwitchPower)
-- Get energy (getSwitchEnergy)
-- Get temperature (getSwitchTemperature- falls back to getTemperature if not supported by firmware)
-- Get presence status (getSwitchPresence)
-- Get name (getSwitchName)
+- Get list (`getSwitchList`)
+- Get state (`getSwitchState`)
+- Set on (`setSwitchOn`)
+- Set off (`setSwitchOff`)
+- Get power (`getSwitchPower`)
+- Get energy (`getSwitchEnergy`)
+- Get presence status (`getSwitchPresence`)
+- Get name (`getSwitchName`)
 
 For AVM FRITZ!DECT 200  control you need to know the actuator identification number (AIN) which can be obtained using `getSwitchList`.
+
+### Comet DECT thermostat functions
+
+Thermostat functions are only available as of FritzOS 6.36
+
+- Get list (`getThermostatList`) - polyfill
+- Set target temperature (`setTempTarget`), supports 'ON'/'OFF' to enable/disable thermostat
+- Get target temperature (`getTempTarget`)
+- Get comfort temperature (`getTempComfort`)
+- Get night temperature (`getTempNight`)
+
+**Note** as of FritzOS 6.36 there is are no official function to obtain a list of thermostats, neither to get the thermostat's temperature. Also the switches `getSwitchTemperature()` function is not working in that firmware version.
+For an alternative approach the `getTemperature()` polyfill function was added which supports both switches and thermostats.
 
 ### Wlan functions
 
 - Set the guest wlan (setGuestWLan)
 - Get the guest wlan settings (getGuestWLan)
 
-### Comet DECT thermostat functions
-
-Thermostat functions are only available as of FritzOS 6.36
-
-- Get list (getThermostatList) - polyfill
-- Get temperature (getTemperature) - polyfill using getDeviceListInfos XML api internally
-- Set target temperature (setTempTarget), supports 'ON'/'OFF' to enable/disable thermostat
-- Get target temperature (getTempTarget)
-- Get comfort temperature (getTempComfort)
-- Get night temperature (getTempNight)
-
-**Note** as of FritzOS 6.36 there is are no official function to obtain a list of thermostats, neither to get the thermostat's temperature. Also the switches `getSwitchTemperature()` function is not working in that firmware version.
-For an alternative approach the `getTemperature()` polyfill function was added which supports both switches and thermostats.
-
 All functions have been tested on FritzOS 6.20/6.36 / FritzBox 7390. The WLAN functions may be less stable.
+
+### Deprecated functions
+
+As of version 0.5.0 the `getSwitchTemperature` function has been replaced with `getTemperature` which works for outlets and thermostats both.
 
 
 ## Install
