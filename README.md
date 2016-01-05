@@ -5,7 +5,7 @@ Node module to communicate with a AVM FritzBox and FRITZ!DECT 200 (smart home ha
 ### General functions
 
 - Get the session ID (`getSessionID`)
-- Get device list as XML (`getDeviceListInfos`) >FritzOS 6.10
+- Get device list as XML (`getDeviceListInfo`) >FritzOS 6.10
 - Get temperature (`getTemperature`)
 
 ### FRITZ!DECT 200 outlet functions
