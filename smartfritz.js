@@ -203,7 +203,7 @@ module.exports.getDeviceListInfo = function(sid, options)
 // get temperature- both switches and thermostats are supported
 module.exports.getTemperature = function(sid, ain, options)
 {
-    return executeCommand(sid, 'getswitchtemperature', ain, options).then(function(body) {
+    return executeCommand(sid, 'gettemperature', ain, options).then(function(body) {
         return Promise.resolve(parseFloat(body) / 10); // °C
     });
 };
