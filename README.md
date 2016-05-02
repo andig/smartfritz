@@ -36,8 +36,8 @@ For an alternative approach the `getTemperature()` polyfill function was added w
 
 ### Wlan functions
 
-- Set the guest wlan (setGuestWLan)
-- Get the guest wlan settings (getGuestWLan)
+- Set the guest wlan (`setGuestWlan`)
+- Get the guest wlan settings (`getGuestWlan`)
 
 All functions have been tested on FritzOS 6.20/6.36 / FritzBox 7390. The WLAN functions may be less stable.
 
