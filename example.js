@@ -4,9 +4,6 @@
  * AVM SmartHome nodeJS Control - for AVM Fritz!Box and Dect200 Devices
  *
  * @author Andreas Goetz <cpuidle@gmx.de>
- *
- * Examples. To use install xml2json:
- *    npm install xml2json
  */
 
 var fritz = require('./smartfritz.js');
