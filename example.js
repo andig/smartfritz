@@ -33,7 +33,7 @@ fritz.getSessionID(username, password).then(function(sid) {
                         console.log("Switch state [" + switches[0] + "]: " + state);
                     });
 
-                    fritz.getSwitchTemperature(sid, switches[0]).then(function(temp) {
+                    fritz.getTemperature(sid, switches[0]).then(function(temp) {
                         console.log("Switch temperature [" + switches[0] + "]: " + temp + "°C");
                     });
                 });
