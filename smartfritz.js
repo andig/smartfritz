@@ -17,22 +17,14 @@ var Promise = require('bluebird');
 var request = require('request').defaults({ strictSSL: false }); // be less strict about SSL errors
 var cheerio = require('cheerio');
 var parser = require('xml2json-light');
+var extend = require('extend');
 
-// #############################################################################
-
-function extend()
-{
-    for (var i=1; i<arguments.length; i++)
-        for (var key in arguments[i])
-            if (arguments[i].hasOwnProperty(key))
-                arguments[0][key] = arguments[i][key];
-    return arguments[0];
-}
+var defaults = { url: 'http://fritz.box' };
 
 // run command for selected device
 function executeCommand(sid, command, ain, options, path)
 {
-    var req = extend({ url: 'http://fritz.box' }, options || {});
+    var req = extend({}, defaults, options || {});
     req.url += path || '/webservices/homeautoswitch.lua?0=0';
 
     if (sid)
@@ -368,8 +360,7 @@ module.exports.setGuestWlan = function(sid, enable, options)
         });
 
         return new Promise(function(resolve, reject) {
-            var req = extend({
-                url: 'http://fritz.box',
+            var req = extend({}, defaults, {
                 method: 'POST',
                 form: settings
             }, options || {});
