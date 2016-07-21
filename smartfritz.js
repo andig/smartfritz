@@ -346,35 +346,35 @@ module.exports.getGuestWlan = function(sid, options)
 module.exports.setGuestWlan = function(sid, enable, options)
 {
     return executeCommand(sid, null, null, options, '/wlan/guest_access.lua?0=0').then(function(body) {
-        var settings = {};
+        var settings = extend(parseHTML(body), {
+            activate_guest_access: enable
+        });
 
-        if (enable) {
-            settings = parseHTML(body);
-
-            // checkboxes
-            for (var property in settings) {
-                if (settings[property] === true)
-                    settings[property] = 'on';
-                else if (settings[property] === false)
-                    delete settings[property];
-            }
-
-            settings.activate_guest_access = 'on';
+        // convert boolean to checkbox
+        for (var property in settings) {
+            if (settings[property] === true)
+                settings[property] = 'on';
+            else if (settings[property] === false)
+                delete settings[property];
         }
 
-        // add "save" hints for various FB versions
-        settings.validate = 'apply';
-        settings.btnSave = '';
-        settings.xhr = 1;
-
-        var req = extend({
-            url: 'http://fritz.box',
-            method: 'POST',
-            form: settings
-        }, options || {});
-        req.url += '/wlan/guest_access.lua?sid=' + sid;
+        // additional settings to apply values
+        settings = extend(settings, {
+            'sid': sid,
+            xhr: 1,
+            apply: '',
+            no_sidrenew: '',
+            oldpage: '/wlan/guest_access.lua'
+        });
 
         return new Promise(function(resolve, reject) {
+            var req = extend({
+                url: 'http://fritz.box',
+                method: 'POST',
+                form: settings
+            }, options || {});
+            req.url += '/data.lua';
+
             request(req, function(error, response, body) {
                 if (error || !(/^2/.test('' + response.statusCode)) || /action=".?login.lua"/.test(body)) {
                     if (/action=".?login.lua"/.test(body)) {
@@ -388,7 +388,7 @@ module.exports.setGuestWlan = function(sid, enable, options)
                     });
                 }
                 else {
-                    resolve(body.trim());
+                    resolve(parseHTML(body));
                 }
             });
         });
