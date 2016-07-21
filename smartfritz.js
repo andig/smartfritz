@@ -16,7 +16,7 @@
 var Promise = require('bluebird');
 var request = require('request').defaults({ strictSSL: false }); // be less strict about SSL errors
 var cheerio = require('cheerio');
-var parser = require('xml2json');
+var parser = require('xml2json-light');
 
 // #############################################################################
 
@@ -100,7 +100,7 @@ function parseHTML(html)
  */
 function getDeviceListInfoArray(sid, options) {
     return module.exports.getDeviceListInfo(sid, options).then(function(devicelistinfo) {
-        var devices = parser.toJson(devicelistinfo, {object:true});
+        var devices = parser.xml2json(devicelistinfo);
         // extract devices as array
         devices = [].concat((devices.devicelist || {}).device || []);
         return Promise.resolve(devices);
