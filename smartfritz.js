@@ -21,20 +21,15 @@ var extend = require('extend');
 
 var defaults = { url: 'http://fritz.box' };
 
-// run command for selected device
-function executeCommand(sid, command, ain, options, path)
+/**
+ * Execute HTTP request that honors failed/invalid login
+ */
+function httpRequest(path, req, options)
 {
-    var req = extend({}, defaults, options || {});
-    req.url += path || '/webservices/homeautoswitch.lua?0=0';
-
-    if (sid)
-        req.url += '&sid=' + sid;
-    if (command)
-        req.url += '&switchcmd=' + command;
-    if (ain)
-        req.url += '&ain=' + ain;
-
     return new Promise(function(resolve, reject) {
+        req = extend({}, defaults, req, options);
+        req.url += path;
+
         request(req, function(error, response, body) {
             if (error || !(/^2/.test('' + response.statusCode)) || /action=".?login.lua"/.test(body)) {
                 if (/action=".?login.lua"/.test(body)) {
@@ -52,6 +47,23 @@ function executeCommand(sid, command, ain, options, path)
             }
         });
     });
+}
+
+/**
+ * Execute Fritz API command for device specified by AIN
+ */
+function executeCommand(sid, command, ain, options, path)
+{
+    path = path || '/webservices/homeautoswitch.lua?0=0';
+
+    if (sid)
+        path += '&sid=' + sid;
+    if (command)
+        path += '&switchcmd=' + command;
+    if (ain)
+        path += '&ain=' + ain;
+
+    return httpRequest(path, {}, options);
 }
 
 /**
@@ -275,7 +287,7 @@ module.exports.getSwitchName = function(sid, ain, options)
 // get the switch list
 module.exports.getThermostatList = function(sid, options)
 {
-    return module.exports.getDeviceListInfo(sid, options).then(function(devices) {
+    return module.exports.getDeviceList(sid, options).then(function(devices) {
         // get thermostats- right now they're only available via the XML api
         var thermostats = devices.filter(function(device) {
             return device.productname == 'Comet DECT';
@@ -305,7 +317,7 @@ module.exports.getTempTarget = function(sid, ain, options)
     });
 };
 
-// get nght temperature (Absenktemperatur)
+// get night temperature (Absenktemperatur)
 module.exports.getTempNight = function(sid, ain, options)
 {
     return executeCommand(sid, 'gethkrabsenk', ain, options).then(function(body) {
@@ -321,11 +333,44 @@ module.exports.getTempComfort = function(sid, ain, options)
     });
 };
 
+// get battery charge - not part of Fritz API
+module.exports.getBatteryCharge = function(sid, ain, options)
+{
+    return module.exports.getDeviceList(sid).then(function(devices) {
+        var dev = devices.find(function(device) {
+            return device.identifier.replace(/\s/g, '') == ain;
+        });
+
+        if (dev === undefined) {
+            return Promise.reject();
+        }
+
+        var req = {
+            method: 'POST',
+            form: {
+                sid: sid,
+                xhr: 1,
+                no_sidrenew: '',
+                device: dev.id,
+                oldpage: '/net/home_auto_hkr_edit.lua',
+                back_to_page: '/net/network.lua'
+            }
+        };
+
+        return httpRequest('/data.lua', req, options).then(function(body) {
+            $ = cheerio.load(body);
+            var res = $('div>label:contains(Batterie)+span').first().text().replace(/[\s%]/g, '');
+            return Promise.resolve(res);
+        });
+    });
+}
+
 
 /*
  * WLAN
  */
 
+// get guest WLAN settings - not part of Fritz API
 module.exports.getGuestWlan = function(sid, options)
 {
     return executeCommand(sid, null, null, options, '/wlan/guest_access.lua?0=0').then(function(body) {
@@ -333,6 +378,7 @@ module.exports.getGuestWlan = function(sid, options)
     });
 };
 
+// set guest WLAN settings - not part of Fritz API
 module.exports.setGuestWlan = function(sid, enable, options)
 {
     return executeCommand(sid, null, null, options, '/wlan/guest_access.lua?0=0').then(function(body) {
@@ -348,38 +394,19 @@ module.exports.setGuestWlan = function(sid, enable, options)
                 delete settings[property];
         }
 
-        // additional settings to apply values
-        settings = extend(settings, {
-            'sid': sid,
-            xhr: 1,
-            apply: '',
-            no_sidrenew: '',
-            oldpage: '/wlan/guest_access.lua'
-        });
+        var req = {
+            method: 'POST',
+            form: extend(settings, {
+                sid: sid,
+                xhr: 1,
+                no_sidrenew: '',
+                apply: '',
+                oldpage: '/wlan/guest_access.lua'
+            })
+        };
 
-        return new Promise(function(resolve, reject) {
-            var req = extend({}, defaults, {
-                method: 'POST',
-                form: settings
-            }, options || {});
-            req.url += '/data.lua';
-
-            request(req, function(error, response, body) {
-                if (error || !(/^2/.test('' + response.statusCode)) || /action=".?login.lua"/.test(body)) {
-                    if (/action=".?login.lua"/.test(body)) {
-                        // fake failed login if redirected to login page without HTTP 403
-                        response.statusCode = 403;
-                    }
-                    reject({
-                        error: error,
-                        response: response,
-                        options: req
-                    });
-                }
-                else {
-                    resolve(parseHTML(body));
-                }
-            });
+        return httpRequest('/data.lua', req, options).then(function(body) {
+            return Promise.resolve(parseHTML(body));
         });
     });
 };
