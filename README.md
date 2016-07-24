@@ -1,4 +1,5 @@
 # smartfritz
+[![NPM Version](https://img.shields.io/npm/v/smartfritz-promise.svg)](https://www.npmjs.com/package/smartfritz-promise)
 
 Node module to communicate with a AVM FritzBox and FRITZ!DECT 200 (smart home hardware) providing the following functions:
 

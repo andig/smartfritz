@@ -302,7 +302,11 @@ module.exports.getSwitchName = function(sid, ain, options)
 // get the switch list
 module.exports.getThermostatList = function(sid, options)
 {
-    return module.exports.getDeviceList(sid, options).then(function(devices) {
+    var deviceList = options && options.deviceList
+        ? Promise.resolve(options.deviceList) 
+        : module.exports.getDeviceList(sid, options);
+
+    return deviceList.then(function(devices) {
         // get thermostats- right now they're only available via the XML api
         var thermostats = devices.filter(function(device) {
             return device.productname == 'Comet DECT';
