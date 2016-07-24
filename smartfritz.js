@@ -202,6 +202,21 @@ module.exports.getDeviceList = function(sid, options)
     });
 }
 
+module.exports.getDevice = function(sid, ain, options)
+{
+    var deviceList = options && options.deviceList
+        ? Promise.resolve(options.deviceList) 
+        : module.exports.getDeviceList(sid, options);
+
+    return deviceList.then(function(devices) {
+        var dev = devices.find(function(device) {
+            return device.identifier.replace(/\s/g, '') == ain;
+        });
+
+        return dev || Promise.reject();
+    });
+}
+
 // get temperature- both switches and thermostats are supported
 module.exports.getTemperature = function(sid, ain, options)
 {
@@ -336,22 +351,14 @@ module.exports.getTempComfort = function(sid, ain, options)
 // get battery charge - not part of Fritz API
 module.exports.getBatteryCharge = function(sid, ain, options)
 {
-    return module.exports.getDeviceList(sid).then(function(devices) {
-        var dev = devices.find(function(device) {
-            return device.identifier.replace(/\s/g, '') == ain;
-        });
-
-        if (dev === undefined) {
-            return Promise.reject();
-        }
-
+    return module.exports.getDevice(sid, ain, options).then(function(device) {
         var req = {
             method: 'POST',
             form: {
                 sid: sid,
                 xhr: 1,
                 no_sidrenew: '',
-                device: dev.id,
+                device: device.id,
                 oldpage: '/net/home_auto_hkr_edit.lua',
                 back_to_page: '/net/network.lua'
             }
@@ -381,11 +388,15 @@ module.exports.getGuestWlan = function(sid, options)
 // set guest WLAN settings - not part of Fritz API
 module.exports.setGuestWlan = function(sid, enable, options)
 {
-    return executeCommand(sid, null, null, options, '/wlan/guest_access.lua?0=0').then(function(body) {
-        var settings = extend(parseHTML(body), {
-            activate_guest_access: enable
-        });
+    var settings = enable instanceof Object
+        ? Promise.resolve(enable)
+        : executeCommand(sid, null, null, options, '/wlan/guest_access.lua?0=0').then(function(body) {
+              return extend(parseHTML(body), {
+                  activate_guest_access: enable
+              });
+          });
 
+    return settings.then(function(settings) {
         // convert boolean to checkbox
         for (var property in settings) {
             if (settings[property] === true)

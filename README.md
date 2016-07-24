@@ -5,8 +5,9 @@ Node module to communicate with a AVM FritzBox and FRITZ!DECT 200 (smart home ha
 ### General functions
 
 - Get the session ID (`getSessionID`)
-- Get device list (`getDeviceList`) >FritzOS 6.10
 - Get device list as XML (`getDeviceListInfo`) >FritzOS 6.10
+- Get device list (`getDeviceList`) >FritzOS 6.10
+- Get device (`getDevice`) >FritzOS 6.10
 - Get temperature (`getTemperature`)
 
 ### FRITZ!DECT 200 outlet functions
@@ -31,14 +32,21 @@ Thermostat functions are only available as of FritzOS 6.36
 - Get target temperature (`getTempTarget`)
 - Get comfort temperature (`getTempComfort`)
 - Get night temperature (`getTempNight`)
+- Get battery charge status (`getBatteryCharge`)
 
-**Note** as of FritzOS 6.36 there is are no official function to obtain a list of thermostats, neither to get the thermostat's temperature. Also the switches `getSwitchTemperature()` function is not working in that firmware version.
+**Note** 
+
+As of FritzOS 6.36 there is are no official function to obtain a list of thermostats, neither to get the thermostat's temperature. Also the switches `getSwitchTemperature()` function is not working in that firmware version.
 For an alternative approach the `getTemperature()` polyfill function was added which supports both switches and thermostats.
 
 ### Wlan functions
 
-- Set the guest wlan (`setGuestWlan`)
 - Get the guest wlan settings (`getGuestWlan`)
+- Set the guest wlan (`setGuestWlan`)
+
+**Note** 
+
+`getGuestWlan` returns a structure containing all wifi settings found in the Fritz!Box UI. The `setGuestWlan` function accepts either a settings structure such as this or a single boolean value.
 
 All functions have been tested on FritzOS 6.20/6.36/6.51 using the FritzBox 7390. The WLAN functions may be less stable.
 

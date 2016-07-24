@@ -11,10 +11,6 @@
   "license": "MIT",
   "contributors": [
     {
-      "name": "Andreas Goetz",
-      "email": "cpuidle@gmx.de"
-    },
-    {
       "name": "Steffen Timm",
       "email": "s.timm@nischi.net"
     },
