@@ -200,12 +200,12 @@ module.exports.getDeviceList = function(sid, options)
         devices = [].concat((devices.devicelist || {}).device || []);
         return Promise.resolve(devices);
     });
-}
+};
 
 module.exports.getDevice = function(sid, ain, options)
 {
     var deviceList = options && options.deviceList
-        ? Promise.resolve(options.deviceList) 
+        ? Promise.resolve(options.deviceList)
         : module.exports.getDeviceList(sid, options);
 
     return deviceList.then(function(devices) {
@@ -215,7 +215,7 @@ module.exports.getDevice = function(sid, ain, options)
 
         return dev || Promise.reject();
     });
-}
+};
 
 // get temperature- both switches and thermostats are supported
 module.exports.getTemperature = function(sid, ain, options)
