@@ -192,6 +192,7 @@ module.exports.getDeviceListInfo = function(sid, options)
     return executeCommand(sid, 'getdevicelistinfos', null, options);
 };
 
+// get device list
 module.exports.getDeviceList = function(sid, options)
 {
     return module.exports.getDeviceListInfo(sid, options).then(function(devicelistinfo) {
@@ -202,8 +203,10 @@ module.exports.getDeviceList = function(sid, options)
     });
 };
 
+// get single device
 module.exports.getDevice = function(sid, ain, options)
 {
+    /* jshint laxbreak:true */
     var deviceList = options && options.deviceList
         ? Promise.resolve(options.deviceList)
         : module.exports.getDeviceList(sid, options);
@@ -230,11 +233,12 @@ module.exports.getTemperature = function(sid, ain, options)
  * Switches
  */
 
-// get the switch list
+// get switch list
 module.exports.getSwitchList = function(sid, options)
 {
     return executeCommand(sid, 'getswitchlist', null, options).then(function(res) {
-        return Promise.resolve(res.split(','));
+        // force empty array on empty result
+        return Promise.resolve(res === "" ? [] : res.split(','));
     });
 };
 
@@ -302,8 +306,9 @@ module.exports.getSwitchName = function(sid, ain, options)
 // get the switch list
 module.exports.getThermostatList = function(sid, options)
 {
+    /* jshint laxbreak:true */
     var deviceList = options && options.deviceList
-        ? Promise.resolve(options.deviceList) 
+        ? Promise.resolve(options.deviceList)
         : module.exports.getDeviceList(sid, options);
 
     return deviceList.then(function(devices) {
@@ -374,7 +379,7 @@ module.exports.getBatteryCharge = function(sid, ain, options)
             return Promise.resolve(res);
         });
     });
-}
+};
 
 
 /*
@@ -392,6 +397,7 @@ module.exports.getGuestWlan = function(sid, options)
 // set guest WLAN settings - not part of Fritz API
 module.exports.setGuestWlan = function(sid, enable, options)
 {
+    /* jshint laxbreak:true */
     var settings = enable instanceof Object
         ? Promise.resolve(enable)
         : executeCommand(sid, null, null, options, '/wlan/guest_access.lua?0=0').then(function(body) {
