@@ -13,6 +13,7 @@
  * Documentation is at http://www.avm.de/de/Extern/files/session_id/AHA-HTTP-Interface.pdf
  */
 
+/* jshint esversion: 6, -W079 */
 var Promise = require('bluebird');
 var request = require('request').defaults({ strictSSL: false }); // be less strict about SSL errors
 var cheerio = require('cheerio');
@@ -36,6 +37,8 @@ function Fritz(username, password, uri) {
 Fritz.prototype = {
     call: function(func) {
         var originalSID = this.sid;
+
+        /* jshint laxbreak:true */
         var promise = this.sid
             ? Promise.resolve(this.sid)
             : module.exports.getSessionID(this.username, this.password, this.options);
