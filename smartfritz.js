@@ -19,6 +19,147 @@ var cheerio = require('cheerio');
 var parser = require('xml2json-light');
 var extend = require('extend');
 
+
+/*
+ * Object-oriented API
+ */
+
+module.exports.Fritz = Fritz;
+
+function Fritz(username, password, uri) {
+    this.sid = null;
+    this.username = username;
+    this.password = password;
+    this.options = { url: uri || 'http://fritz.box' };
+}
+
+Fritz.prototype = {
+    call: function(func) {
+        var originalSID = this.sid;
+        var promise = this.sid
+            ? Promise.resolve(this.sid)
+            : module.exports.getSessionID(this.username, this.password, this.options);
+
+        // function arguments beyond func parameter
+        var args = Array.from(arguments).slice(1).concat(this.options);
+
+        return promise.then(function(sid) {
+            this.sid = sid;
+
+            return func.apply(null, [this.sid].concat(args)).catch(function(error) {
+                if (error.response && error.response.statusCode == 403) {
+                    // this.sid has not been updated or is invalid - get a new SID
+                    if (this.sid === null || this.sid === originalSID) {
+                        this.sid = null;
+
+                        return fritz.getSessionID(this.username, this.password, this.options).then(function(sid) {
+                            // this session id is the most current one - so use it from now on
+                            this.sid = sid;
+
+                            return func.apply(null, [this.sid].concat(args));
+                        }.bind(this));
+                    }
+                    // this.sid has already been updated during the func() call - assume this is a valid SID now
+                    else {
+                        return func.apply(null, [this.sid].concat(args));
+                    }
+                }
+
+                throw error;
+            }.bind(this));
+        }.bind(this));
+    },
+
+    getSID: function() {
+        return this.sid;
+    },
+
+    getDeviceListInfo: function() {
+        return this.call(module.exports.getDeviceListInfo);
+    },
+
+    getDeviceList: function() {
+        return this.call(module.exports.getDeviceList);
+    },
+
+    getDevice: function(ain) {
+        return this.call(module.exports.getDevice, ain);
+    },
+
+    getTemperature: function(ain) {
+        return this.call(module.exports.getTemperature, ain);
+    },
+
+    getSwitchList: function() {
+        return this.call(module.exports.getSwitchList);
+    },
+
+    getSwitchState: function(ain) {
+        return this.call(module.exports.getSwitchState, ain);
+    },
+
+    setSwitchOn: function(ain) {
+        return this.call(module.exports.setSwitchOn, ain);
+    },
+
+    setSwitchOff: function(ain) {
+        return this.call(module.exports.setSwitchOff, ain);
+    },
+
+    getSwitchEnergy: function(ain) {
+        return this.call(module.exports.getSwitchEnergy, ain);
+    },
+
+    getSwitchPower: function(ain) {
+        return this.call(module.exports.getSwitchPower, ain);
+    },
+
+    getSwitchPresence: function(ain) {
+        return this.call(module.exports.getSwitchPresence, ain);
+    },
+
+    getSwitchName: function(ain) {
+        return this.call(module.exports.getSwitchName, ain);
+    },
+
+    getThermostatList: function() {
+        return this.call(module.exports.getThermostatList);
+    },
+
+    setTempTarget: function(ain, temp) {
+        return this.call(module.exports.setTempTarget, ain, temp);
+    },
+
+    getTempTarget: function(ain) {
+        return this.call(module.exports.getTempTarget, ain);
+    },
+
+    getTempNight: function(ain) {
+        return this.call(module.exports.getTempNight, ain);
+    },
+
+    getTempComfort: function(ain) {
+        return this.call(module.exports.getTempComfort, ain);
+    },
+
+    getBatteryCharge: function(ain) {
+        return this.call(module.exports.getBatteryCharge, ain);
+    },
+
+    getGuestWlan: function() {
+        return this.call(module.exports.getGuestWlan);
+    },
+
+    setGuestWlan: function(enable) {
+        return this.call(module.exports.setGuestWlan, enable);
+    },
+};
+
+
+/*
+ * Functional API
+ */
+
 var defaults = { url: 'http://fritz.box' };
 
 /**

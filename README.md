@@ -1,7 +1,7 @@
 # smartfritz
 [![NPM Version](https://img.shields.io/npm/v/smartfritz-promise.svg)](https://www.npmjs.com/package/smartfritz-promise)
 
-Node module to communicate with a AVM FritzBox and FRITZ!DECT 200 (smart home hardware) providing the following functions:
+Node module to communicate with a AVM Fritz!Box and various smart home devices like Fritz!DECT 200 outlet, FRITZ!Powerline 546E WLAN set and CometDECT thermostat providing the following functions:
 
 ### General functions
 
@@ -9,9 +9,13 @@ Node module to communicate with a AVM FritzBox and FRITZ!DECT 200 (smart home ha
 - Get device list as XML (`getDeviceListInfo`) >FritzOS 6.10
 - Get device list (`getDeviceList`) >FritzOS 6.10
 - Get device (`getDevice`) >FritzOS 6.10
-- Get temperature (`getTemperature`)
+- Get temperature (`getTemperature`) - polyfill
 
-### FRITZ!DECT 200 outlet functions
+**Note**
+
+`getTemperature` is not available on the FRITZ!Powerline 546E WLAN set and will always return `NaN`.
+
+### Fritz!DECT 200 outlet functions (includes FRITZ!Powerline 546E)
 
 - Get list (`getSwitchList`)
 - Get state (`getSwitchState`)
@@ -22,7 +26,7 @@ Node module to communicate with a AVM FritzBox and FRITZ!DECT 200 (smart home ha
 - Get presence status (`getSwitchPresence`)
 - Get name (`getSwitchName`)
 
-For AVM FRITZ!DECT 200  control you need to know the actuator identification number (AIN) which can be obtained using `getSwitchList`.
+For controlling AVM Fritz!DECT 200 devices the actuator identification number (AIN) is needed. the AIN can be obtained using `getSwitchList` which returns a list of AINs or the more general `getDeviceList` function which returns a verbose device list structure as JSON.
 
 ### Comet DECT thermostat functions
 
@@ -35,7 +39,7 @@ Thermostat functions are only available as of FritzOS 6.36
 - Get night temperature (`getTempNight`)
 - Get battery charge status (`getBatteryCharge`)
 
-**Note** 
+**Note**
 
 As of FritzOS 6.36 there is are no official function to obtain a list of thermostats, neither to get the thermostat's temperature. Also the switches `getSwitchTemperature()` function is not working in that firmware version.
 For an alternative approach the `getTemperature()` polyfill function was added which supports both switches and thermostats.
@@ -45,27 +49,46 @@ For an alternative approach the `getTemperature()` polyfill function was added w
 - Get the guest wlan settings (`getGuestWlan`)
 - Set the guest wlan (`setGuestWlan`)
 
-**Note** 
+**Note**
 
 `getGuestWlan` returns a structure containing all wifi settings found in the Fritz!Box UI. The `setGuestWlan` function accepts either a settings structure such as this or a single boolean value.
 
-All functions have been tested on FritzOS 6.20/6.36/6.51 using the FritzBox 7390. The WLAN functions may be less stable.
+All functions have been tested on FritzOS 6.20/6.36/6.51 using the Fritz!Box 7390. The WLAN functions may be less stable.
 
 ### Deprecated functions
 
 As of version 0.5.0 the `getSwitchTemperature` function has been replaced with `getTemperature` which works for outlets and thermostats both.
 
 
-## Install
+## Installation
 
 ```bash
 npm install smartfritz-promise
 ```
 
-## How to use
 
-Get the session ID default:
-as URL "fritz.box" is used as default paramter
+## Usage
+
+As of version 0.7.0 smartfritz supports both the legacy functional interface as well a new object-oriented interface.
+The new object interface is the recommended way of using smartfritz.
+
+### Object-oriented interface
+
+Get the list of switch AINs using a customer Fritz!Box address:
+```js
+var Fritz = require('smartfritz-promise').Fritz;
+
+var f = new Fritz("user", "password", "192.168.178.1");
+
+f.getSwitchList().then(function(ains){
+  console.log(f.getSID());
+  console.log(ains);
+});
+```
+
+### Functional interface
+
+Get the session ID using default Fritz!Box address (http://fritz.box):
 ```js
 var fritz = require('smartfritz-promise');
 
@@ -74,39 +97,32 @@ fritz.getSessionID("user", "password").then(function(sid) {
 });
 ```
 
-
-Get the session ID with own URL:
-use your Fritz!Box IP when "fritz.box" is not working.
+Get the list of switch AINs using a custom Fritz!Box address:
 ```js
-var moreParam = { url:"192.168.178.1" };
-fritz.getSessionID("user", "password", moreParam).then(function(sid) {
-    console.log(sid);
-});
-```
-
-Get the Switch AID List:
-```js
-fritz.getSessionID("user", "password").then(function(sid) {
+var options = { url:"192.168.178.1" };
+fritz.getSessionID("user", "password", options).then(function(sid) {
   console.log(sid);
 
-  fritz.getSwitchList(sid).then(function(ains){
-    console.log("Switches AINs: "+ains);
+  // note that the options/url need be carries through every single api call
+  fritz.getSwitchList(sid, options).then(function(ains){
+    console.log(ains);
   });
 });
 ```
 
-## AHA-HTTP Interface
 
-AHA - AVM Home Interface
+## AHA HTTP Interface Documentation
 
-https://fritz.box/webservices/homeautoswitch.lua?ain=<ain>&switchcmd=<cmd>&sid=<sid>
-
-AHA-HTTP-Interface document 
 http://avm.de/fileadmin/user_upload/Global/Service/Schnittstellen/AHA-HTTP-Interface.pdf
 
-## Thanks to // Code base from:
+
+## Acknowledgements
+
+Thanks to:
 
 * nischelwitzer for the basic js implementation (https://github.com/nischelwitzer/smartfritz)
 * steffen.timm for the basic communication function
-* thk4711 for the FRITZ!DECT 200 codes 
-* AVM for providing the good AHA-HTTP interface document 
+* thk4711 for the FRITZ!DECT 200 codes
+* AVM for providing the good AHA-HTTP interface document
+* EUROtronic Technology GmbH for providing free CometDECT thermostat sample
+* AVM for providing free FRITZ!Powerline 546E WLAN set
