@@ -361,7 +361,7 @@ module.exports.getDevice = function(sid, ain, options)
     });
 };
 
-// get temperature- both switches and thermostats are supported
+// get temperature- both switches and thermostats are supported, but not powerline modules
 module.exports.getTemperature = function(sid, ain, options)
 {
     return executeCommand(sid, 'gettemperature', ain, options).then(function(body) {
