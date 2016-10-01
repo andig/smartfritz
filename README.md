@@ -1,6 +1,7 @@
 # smartfritz
 [![NPM Version](https://img.shields.io/npm/v/smartfritz-promise.svg)](https://www.npmjs.com/package/smartfritz-promise)
 [![Build status](https://travis-ci.org/andig/smartfritz.svg?branch=master)](https://travis-ci.org/andig/smartfritz)
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=HWZTN5AU8LSUC)
 
 Node module to communicate with a AVM Fritz!Box and various smart home devices like Fritz!DECT 200 outlet, FRITZ!Powerline 546E WLAN set and CometDECT thermostat providing the following functions:
 
